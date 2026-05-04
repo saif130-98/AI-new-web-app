@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📰 AI News Classifier</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          animation: {
+            'gradient': 'gradient 8s linear infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          },
+          keyframes: {
+            gradient: {
+              '0%, 100%': {
+                'background-size': '200% 200%',
+                'background-position': 'left center'
+              },
+              '50%': {
+                'background-size': '200% 200%',
+                'background-position': 'right center'
+              },
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Axios -->
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-slate-900 min-h-screen text-slate-100 overflow-x-hidden selection:bg-purple-500 selection:text-white">
+  
+  <!-- Background Decorations -->
+  <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+    <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-purple-600/30 blur-[100px] animate-pulse-slow"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/20 blur-[120px] animate-pulse-slow" style="animation-delay: 2s;"></div>
+    <div class="absolute top-[40%] left-[60%] w-[30%] h-[30%] rounded-full bg-pink-600/20 blur-[90px] animate-pulse-slow" style="animation-delay: 1s;"></div>
+  </div>
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // SVG Icons
+    const NewspaperIcon = () => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+        <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
+        <path d="M18 14h-8"/>
+        <path d="M15 18h-5"/>
+        <path d="M10 6h8v4h-8V6Z"/>
+      </svg>
+    );
+
+    const AlertCircleIcon = () => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    );
+
+    const LoaderIcon = () => (
+      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+    );
+
+    const ChevronUpIcon = () => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m18 15-6-6-6 6"/>
+      </svg>
+    );
+
+    const ChevronDownIcon = () => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m6 9 6 6 6-6"/>
+      </svg>
+    );
+    
+    const SparklesIcon = () => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+        <path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
+      </svg>
+    );
+
+    // Helpers to get dynamic colors based on category string
+    const getCategoryColor = (category) => {
+      if (category.includes('World')) return 'from-blue-400 to-blue-600';
+      if (category.includes('Sports')) return 'from-orange-400 to-orange-600';
+      if (category.includes('Business')) return 'from-emerald-400 to-emerald-600';
+      if (category.includes('Sci/Tech')) return 'from-purple-400 to-purple-600';
+      return 'from-gray-400 to-gray-600';
+    };
+    
+    const getCategoryShadow = (category) => {
+      if (category.includes('World')) return 'shadow-blue-500/50';
+      if (category.includes('Sports')) return 'shadow-orange-500/50';
+      if (category.includes('Business')) return 'shadow-emerald-500/50';
+      if (category.includes('Sci/Tech')) return 'shadow-purple-500/50';
+      return 'shadow-gray-500/50';
+    };
+
+    function App() {
+      const [inputText, setInputText] = useState('');
+      const [loading, setLoading] = useState(false);
+      const [result, setResult] = useState(null);
+      const [error, setError] = useState('');
+      const [showUnderTheHood, setShowUnderTheHood] = useState(false);
+      const [isFocused, setIsFocused] = useState(false);
+
+      const handleClassify = async () => {
+        if (!inputText.trim()) {
+          setError('Please enter some text before analyzing.');
+          return;
+        }
+
+        setLoading(true);
+        setError('');
+        setResult(null);
+
+        try {
+          const response = await axios.post('http://127.0.0.1:8000/api/predict', {
+            text: inputText
+          });
+          setResult(response.data);
+        } catch (err) {
+          setError('Failed to reach the API. Make sure the FastAPI backend is running on port 8000.');
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="py-12 px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="max-w-4xl mx-auto space-y-10">
+            
+            {/* Header Section */}
+            <div className="text-center space-y-6 animate-float">
+              <div className="flex justify-center">
+                <div className="p-5 bg-gradient-to-tr from-purple-600 to-pink-500 rounded-2xl shadow-lg shadow-purple-500/30 transform rotate-3 hover:rotate-6 transition-transform duration-300">
+                  <NewspaperIcon />
+                </div>
+              </div>
+              <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 animate-gradient">
+                AI News Classifier
+              </h1>
+              <p className="text-xl text-slate-300 max-w-2xl mx-auto font-light">
+                Instantly route news articles to the correct department using Deep Learning.
+              </p>
+            </div>
+
+            {/* Input Section */}
+            <div className={`backdrop-blur-xl bg-slate-800/50 rounded-3xl shadow-2xl border transition-colors duration-500 p-6 md:p-8 space-y-6 ${isFocused ? 'border-purple-500/50 shadow-purple-500/20' : 'border-slate-700'}`}>
+              <div className="space-y-3">
+                <label htmlFor="article" className="block text-sm font-semibold text-slate-300 uppercase tracking-wider">
+                  Paste an article headline or snippet below
+                </label>
+                <div className="relative group">
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-0 group-hover:opacity-30 transition duration-500"></div>
+                  <textarea
+                    id="article"
+                    rows="5"
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    className="relative block w-full rounded-2xl bg-slate-900/80 border-slate-700 text-slate-100 placeholder-slate-500 shadow-inner focus:border-purple-500 focus:ring-1 focus:ring-purple-500 sm:text-lg p-5 transition duration-200 resize-y"
+                    placeholder="e.g., Apple announces a new high-speed quantum computer chip..."
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="rounded-xl bg-red-900/40 border border-red-500/50 p-4 flex items-center gap-3 text-red-200 animate-pulse">
+                  <AlertCircleIcon />
+                  <p className="text-sm font-medium">{error}</p>
+                </div>
+              )}
+
+              <button
+                onClick={handleClassify}
+                disabled={loading}
+                className="group relative w-full flex items-center justify-center py-4 px-4 rounded-xl text-xl font-bold text-white overflow-hidden transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-xl"
+              >
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 animate-gradient"></div>
+                <div className="absolute inset-0 w-full h-full bg-black/10 group-hover:bg-transparent transition-colors"></div>
+                <div className="relative flex items-center">
+                  {loading ? (
+                    <React.Fragment>
+                      <LoaderIcon />
+                      Processing Intelligence...
+                    </React.Fragment>
+                  ) : (
+                    <React.Fragment>
+                      <SparklesIcon />
+                      Analyze Text
+                    </React.Fragment>
+                  )}
+                </div>
+              </button>
+            </div>
+
+            {/* Results Section */}
+            {result && (
+              <div className="space-y-8 animate-[fadeIn_0.5s_ease-out]">
+                {/* Winning Category Badge */}
+                <div className="relative overflow-hidden backdrop-blur-xl bg-slate-800/80 rounded-3xl shadow-2xl border border-slate-700 p-10 text-center group">
+                  <div className={`absolute top-0 left-0 w-full h-2 bg-gradient-to-r ${getCategoryColor(result.winning_category)}`}></div>
+                  <div className={`absolute -inset-20 bg-gradient-to-r ${getCategoryColor(result.winning_category)} opacity-5 blur-3xl rounded-full group-hover:opacity-10 transition-opacity duration-700`}></div>
+                  
+                  <h2 className="relative text-sm font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">
+                    Classification Result
+                  </h2>
+                  <div className="relative flex items-center justify-center">
+                    <span className={`text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r ${getCategoryColor(result.winning_category)} drop-shadow-sm`}>
+                      {result.winning_category}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Confidence Breakdown */}
+                <div className="backdrop-blur-xl bg-slate-800/50 rounded-3xl shadow-xl border border-slate-700 p-8">
+                  <h3 className="text-xl font-bold text-white mb-8 flex items-center gap-3">
+                    <span className="p-2 bg-slate-700 rounded-lg">📊</span> 
+                    Neural Network Confidence
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                    {Object.entries(result.confidence_breakdown)
+                      .sort((a, b) => b[1] - a[1]) // Sort by probability descending
+                      .map(([category, prob]) => {
+                      const percentage = (prob * 100).toFixed(2);
+                      const colorClass = getCategoryColor(category);
+                      const shadowClass = getCategoryShadow(category);
+                      return (
+                        <div key={category} className="space-y-3 group">
+                          <div className="flex justify-between items-center text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">
+                            <span>{category}</span>
+                            <span className="font-mono">{percentage}%</span>
+                          </div>
+                          <div className="w-full bg-slate-900 rounded-full h-3.5 overflow-hidden border border-slate-700/50 shadow-inner">
+                            <div
+                              className={`h-full rounded-full bg-gradient-to-r ${colorClass} ${shadowClass} shadow-lg transition-all duration-1000 ease-out relative`}
+                              style={{ width: `${percentage}%` }}
+                            >
+                              <div className="absolute top-0 right-0 bottom-0 left-0 bg-white/20 animate-pulse"></div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Under the Hood Accordion */}
+                <div className="backdrop-blur-xl bg-slate-800/50 rounded-3xl shadow-xl border border-slate-700 overflow-hidden transition-all duration-300">
+                  <button
+                    onClick={() => setShowUnderTheHood(!showUnderTheHood)}
+                    className="w-full flex items-center justify-between p-6 hover:bg-slate-700/50 transition-colors duration-200 focus:outline-none group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-slate-700 rounded-lg group-hover:bg-slate-600 transition-colors">🛠️</div>
+                      <h3 className="text-lg font-bold text-slate-200">
+                        See Under the Hood: What did the AI actually read?
+                      </h3>
+                    </div>
+                    <div className="p-2 bg-slate-700 rounded-full text-slate-400 group-hover:text-white transition-colors">
+                      {showUnderTheHood ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                    </div>
+                  </button>
+                  
+                  {showUnderTheHood && (
+                    <div className="p-6 md:p-8 border-t border-slate-700 space-y-8 bg-slate-900/30">
+                      <p className="text-slate-400 leading-relaxed">
+                        Neural networks don't read English the way we do. First, we strip away punctuation, remove filler "stop words" (like "the", "is", "at"), and reduce words to their base roots (lemmatization).
+                      </p>
+                      
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-[0.15em] flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-slate-500"></div>
+                            Original Text
+                          </h4>
+                          <p className="text-slate-300 italic bg-slate-900/80 p-4 rounded-xl border border-slate-800 shadow-inner">
+                            "{inputText}"
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-bold text-blue-400 uppercase tracking-[0.15em] flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
+                            Cleaned & Lemmatized
+                          </h4>
+                          <div className="bg-slate-900/80 text-blue-200 p-4 rounded-xl font-mono text-sm overflow-x-auto border border-slate-800 shadow-inner">
+                            {result.cleaned_string || "No valid words found."}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-bold text-pink-400 uppercase tracking-[0.15em] flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-pink-400 animate-pulse"></div>
+                            Integer Sequence (Neural Input)
+                          </h4>
+                          <div className="bg-slate-900/80 text-pink-200 p-4 rounded-xl font-mono text-sm overflow-x-auto break-all border border-slate-800 shadow-inner leading-relaxed">
+                            [{result.padded_sequence.join(', ')}]
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            <style>{`
+              @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+            `}</style>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

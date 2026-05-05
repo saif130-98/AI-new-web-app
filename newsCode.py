@@ -149,8 +149,8 @@ def create_lstm_model(vocab_size, embedding_dim, emb_matrix, max_length):
         trainable=False 
     ))
     lstm_model.add(SpatialDropout1D(0.2))
-    lstm_model.add(LSTM(100, dropout=0.3, recurrent_dropout=0.3))
-    lstm_model.add(Dense(4, activation='softmax')) 
+    lstm_model.add(LSTM(100, dropout=0.3, recurrent_dropout=0.3)) # 100 Hidden Units 
+    lstm_model.add(Dense(4, activation='softmax')) # Output Layer
 
     lstm_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return lstm_model
@@ -251,11 +251,11 @@ plt.show()
 # 13. SAVE THE MODEL & ASSETS
 # ==========================================
 print("\n--- Saving Model and Assets ---")
-model.save("ag_news_lstm_model2.keras")
-print("1. LSTM Model saved as 'ag_news_lstm_model2.keras'")
-w2v_model.save("ag_news_word2vec2.model")
-print("2. Word2Vec Model saved as 'ag_news_word2vec2.model'")
-with open('ag_news_tokenizer2.pkl', 'wb') as handle:
+model.save("ag_news_lstm_model.keras")
+print("1. LSTM Model saved as 'ag_news_lstm_model.keras'")
+w2v_model.save("ag_news_word2vec.model")
+print("2. Word2Vec Model saved as 'ag_news_word2vec.model'")
+with open('ag_news_tokenizer.pkl', 'wb') as handle:
     pickle.dump(keras_tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
-print("3. Tokenizer saved as 'ag_news_tokenizer2.pkl'")
+print("3. Tokenizer saved as 'ag_news_tokenizer.pkl'")
 print("\nAll assets successfully saved! Your pipeline is ready for production.")
